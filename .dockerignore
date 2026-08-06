@@ -1,0 +1,7 @@
+node_modules
+.git
+.vscode
+auth
+data
+*.log
+README.md
