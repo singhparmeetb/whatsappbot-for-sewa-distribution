@@ -39,3 +39,4 @@ node_modules
 
 *.xlsx
 *.xls
+/auth
