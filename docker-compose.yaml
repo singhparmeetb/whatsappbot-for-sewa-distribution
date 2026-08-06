@@ -1,17 +1,10 @@
-version: "3.9"
-
 services:
-
   whatsapp-bot:
-
-    build: .
-
-    container_name: whatsapp-bot
+    image: whatsapp-sewa-bot:1.0
+    container_name: whatsapp-sewa-bot
 
     restart: unless-stopped
 
     volumes:
-
-      - ./auth:/app/auth
-
       - ./data:/app/data
+      - ./auth:/app/.wwebjs_auth
