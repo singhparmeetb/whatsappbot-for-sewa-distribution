@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+
+  whatsapp-bot:
+
+    build: .
+
+    container_name: whatsapp-bot
+
+    restart: unless-stopped
+
+    volumes:
+
+      - ./auth:/app/auth
+
+      - ./data:/app/data

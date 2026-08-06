@@ -2,25 +2,24 @@ const { Client, LocalAuth } = require("whatsapp-web.js");
 const qrcode = require("qrcode-terminal");
 
 const client = new Client({
-  authStrategy: new LocalAuth(),
+  authStrategy: new LocalAuth({
+    dataPath: "./auth",
+  }),
 });
 
 const XLSX = require("xlsx");
 let BOT_START_TIME = 0;
 
-// const axios = require("axios");
-// const csv = require("csv-parser");
-// const { Readable } = require("stream");
-
-// const SHEET_URL =
-//   "https://docs.google.com/spreadsheets/d/1gYwXafF--423xs-wOqGNbGmk3c4-tkE1RXlMGfGv6kE/gviz/tq?tqx=out:csv";
-
 const dutyMap = new Map();
+
+const path = require("path");
+
+const EXCEL_PATH = path.join(__dirname, "data", "Sewa_Allocation.xlsx");
 
 function loadExcel() {
   dutyMap.clear();
 
-  const workbook = XLSX.readFile("D:\\LocalSend\\Sewa_Allocation.xlsx");
+  const workbook = XLSX.readFile(EXCEL_PATH);
 
   const usersSheet = workbook.Sheets["Users"];
   const allocationsSheet = workbook.Sheets["Allocations"];
@@ -192,64 +191,65 @@ ${menu}`,
 }
 
 client.on("message", async (msg) => {
-  if (msg.fromMe) {
-    console.log("Self Messages not allowed");
-    return;
-  }
-
-  if (
-    msg.from.endsWith("@c.us") ||
-    msg.from.endsWith("@g.us") ||
-    msg.from.endsWith("@lid")
-  ) {
-    const text = msg.body.trim();
-    const isMenuOption = /^\d+$/.test(text);
-    if (text !== "Sewa" && !isMenuOption) {
-      //       await msg.reply(
-      //         `🙏 Sat Sri Akal!
-
-      // Please send *Hi* to receive your seva duty.
-
-      // Waheguru Ji Ka Khalsa
-      // Waheguru Ji Ki Fateh 🙏`,
-      //       );
-
-      console.warn("Invalid Mesage received, will not respond");
-      console.log({
-        from: msg.from,
-        type: msg.type,
-        fromMe: msg.fromMe,
-        author: msg.author,
-        body: msg.body,
-      });
-      return;
-    } else if (msg.timestamp < BOT_START_TIME) {
-      console.warn("Older Mesage received, will not respond");
-      console.log({
-        from: msg.from,
-        type: msg.type,
-        fromMe: msg.fromMe,
-        author: msg.author,
-        body: msg.body,
-      });
+  try {
+    if (msg.fromMe) {
+      console.log("Self Messages not allowed");
       return;
     }
 
-    const phone = await resolvePhoneNumber(msg);
-    console.log({
-      from: msg.from,
-      type: msg.type,
-      fromMe: msg.fromMe,
-      author: msg.author,
-      body: msg.body,
-    });
-    console.log("Received from %s", phone);
+    if (
+      msg.from.endsWith("@c.us") ||
+      msg.from.endsWith("@g.us") ||
+      msg.from.endsWith("@lid")
+    ) {
+      const text = msg.body.trim();
+      const isMenuOption = /^\d+$/.test(text);
+      if (text !== "Sewa" && !isMenuOption) {
+        //       await msg.reply(
+        //         `🙏 Sat Sri Akal!
 
-    if (!dutyMap.has(phone)) {
-      console.log("Cannot find duty for %s", phone);
+        // Please send *Hi* to receive your seva duty.
 
-      await msg.reply(
-        `🙏 Sat Sri Akal!
+        // Waheguru Ji Ka Khalsa
+        // Waheguru Ji Ki Fateh 🙏`,
+        //       );
+
+        console.warn("Invalid Mesage received, will not respond");
+        console.log({
+          from: msg.from,
+          type: msg.type,
+          fromMe: msg.fromMe,
+          author: msg.author,
+          body: msg.body,
+        });
+        return;
+      } else if (msg.timestamp < BOT_START_TIME) {
+        console.warn("Older Mesage received, will not respond");
+        console.log({
+          from: msg.from,
+          type: msg.type,
+          fromMe: msg.fromMe,
+          author: msg.author,
+          body: msg.body,
+        });
+        return;
+      }
+
+      const phone = await resolvePhoneNumber(msg);
+      console.log({
+        from: msg.from,
+        type: msg.type,
+        fromMe: msg.fromMe,
+        author: msg.author,
+        body: msg.body,
+      });
+      console.log("Received from %s", phone);
+
+      if (!dutyMap.has(phone)) {
+        console.log("Cannot find duty for %s", phone);
+
+        await msg.reply(
+          `🙏 Sat Sri Akal!
 
       Sorry, we could not find your duty assignment.
 
@@ -257,29 +257,32 @@ client.on("message", async (msg) => {
 
       Waheguru Ji Ka Khalsa
       Waheguru Ji Ki Fateh 🙏`,
-      );
+        );
 
-      return;
+        return;
+      }
+
+      const person = dutyMap.get(phone);
+
+      if (isMenuOption) {
+        await handleBatchSelection(msg, person, text);
+
+        return;
+      }
+
+      await handleHi(msg, person);
+    } else {
+      console.warn("Invalid Message Source");
+      console.log({
+        from: msg.from,
+        type: msg.type,
+        fromMe: msg.fromMe,
+        author: msg.author,
+        body: msg.body,
+      });
     }
-
-    const person = dutyMap.get(phone);
-
-    if (isMenuOption) {
-      await handleBatchSelection(msg, person, text);
-
-      return;
-    }
-
-    await handleHi(msg, person);
-  } else {
-    console.warn("Invalid Message Source");
-    console.log({
-      from: msg.from,
-      type: msg.type,
-      fromMe: msg.fromMe,
-      author: msg.author,
-      body: msg.body,
-    });
+  } catch (err) {
+    console.error("Message handler failed:", err);
   }
 });
 
