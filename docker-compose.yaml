@@ -1,6 +1,6 @@
 services:
   whatsapp-bot:
-    image: whatsapp-sewa-bot:1.0
+    image: whatsapp-sewa-bot:1.1
     container_name: whatsapp-sewa-bot
 
     restart: unless-stopped
